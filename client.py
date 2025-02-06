@@ -1,98 +1,77 @@
 import pygame
 from network import Network
-from player import Player
 
-width = height = 700
+width = height = 500
 window = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Client")
 
+clientNumber = 0
 
-class Button:
-    def __init__(self, text, x, y, color):
-        self.text = text
+class Player:
+    def __init__(self, x, y, width, height, color):
         self.x = x
         self.y = y
+        self.width = width
+        self.height = height
         self.color = color
-        self.width = 150
-        self.height = 100
+        self.rect = (x, y, width, height)
+        self.vel = 3 
 
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height))
-        font = pygame.font.SysFont("comicsans", 40)
-        text = font.render(self.text, 1, (255, 255, 255))
-        win.blit(text, (self.x + round(self.width / 2) - round(text.get_width() / 2), round(self.y + self.height / 2) - round(text.get_height() / 2)))
+    def draw(self, window):
+        pygame.draw.rect(window, self.color, self.rect)
 
-    def click(self, pos):
-        x1 = pos[0]
-        y1 = pos[1]
-        if self.x <= x1 <= self.x + self.width and self.y <= y1 <= self.y + self.height:
+    def move(self):
+        keys = pygame.key.get_pressed()
 
-btns = [Button("Rock", 50, 500, (0, 0, 0)), Button("Scissors", 250, 500, (255, 0, 0)), Button("Paper", 450, 500, (0, 255, 0))]
+        if keys[pygame.K_LEFT]:
+            self.x -= self.vel
+        if keys[pygame.K_RIGHT]:
+            self.x += self.vel
+        if keys[pygame.K_UP]:
+            self.y -= self.vel
+        if keys[pygame.K_DOWN]:
+            self.y += self.vel
+
+        self.update()
+
+    def update(self):
+        self.rect = (self.x,self.y, self.width,self.height)
+
+def read_pos(str):
+    str = str.split(",")
+    return int(str[0]), int(str[1])
+
+def make_pos(tup):
+    return str(tup[0]) + "," + str(tup[1])
+
+def redrawWindow(window, player, player2):
+    window.fill((255, 255, 255))
+    player.draw(window)
+    player2.draw(window)
+    pygame.display.update()
+
 
 def main():
     run = True
-    clock = pygame.time.Clock()
     n = Network()
-    player = int(n.getP())
-    print("You are player", player)
+    startPos = read_pos(n.getPos())
+    p = Player(startPos[0], startPos[1], 100, 100, (0, 255, 0))
+    p2 = Player(0, 0, 100, 100, (255, 0, 0))
+    clock = pygame.time.Clock()
 
     while run:
         clock.tick(60)
-        try:
-            game = n.send("get")
-        except:
-            run = False
-            print("Couldn't get game")
-            break
 
-        if game.bothWent():
-            redrawWindow()
-            pygame.time.delay(500)
-            try:
-                game = n.send("reset")
-            except:
-                run = False
-                print("Couldn't get game")
-                break
-
-            font = pygame.font.SysFont("comicsans", 90)
-            if (game.winner() == 1 and player == 1) or (game.winner() == 0 and player == 0):
-                text = font.render("You Won!", 1, (255, 0, 0))
-            elif game.winner() == 1:
-                text = font.render("Tie Game!", 1, (255, 0, 0))
-            else:
-                text = font.render("You Lost!", 1, (255, 0, 0))
-
-            window.blit(text, (width / 2 - text.get_width() / 2, height / 2 - text.get_height() / 2))
-            pygame.display.update()
-            pygame.time.delay(2000)
+        p2Pos = read_pos(n.send(make_pos((p.x, p.y))))
+        p2.x = p2Pos[0]
+        p2.y = p2Pos[1]
+        p2.update()
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
-
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                for btn in btns:
-                    if btn.click(pos) and game.connected():
-                        if player == 0:
-                            if not game.p1Went:
-                                n.send(btn.text)
-                        else:
-                            if not game.p2Went:
-                                n.send(btn.text)
-        redrawWindow(window, game, p)
-
-def redrawWindow(window, game, p):
-    window.fill((128, 128, 128))
-
-    if not game.connected():
-        font = pygame.font.SysFont("comicsans", 80)
-        text = font.render("Waiting for Player...", 1, (255, 0, 0), True)
-        window.blit(text, (width/2 - text.get_width()/2, height/2 - text.get_height()/2))
-    else:
-        font = pygame.font.SysFont("comicsans", 60)
-
+        p.move()
+        redrawWindow(window, p, p2)
 
 main()
