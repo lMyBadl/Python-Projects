@@ -3,7 +3,7 @@ from _thread import *
 import pickle
 from game import Game
 
-server = "10.11.250.207"
+server = "10.161.62.66"
 port = 5555
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -13,7 +13,7 @@ try:
 except socket.error as e:
     str(e)
 
-s.listen(2)
+s.listen()
 print("Waiting for a connection, Server Started")
 
 connected = set()

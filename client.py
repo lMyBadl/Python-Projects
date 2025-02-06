@@ -86,6 +86,7 @@ def main():
     run = True
     clock = pygame.time.Clock()
     n = Network()
+    print(n.getP())
     player = int(n.getP())
     print("You are player", player)
 
